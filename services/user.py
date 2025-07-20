@@ -11,7 +11,6 @@ from schemas.response import ResponseSchema
 
 
 def get_owned_courses(db: Session, current_user: UserModel.User):
-
     try:
         db_course = (
             db.query(CourseModel)
@@ -19,13 +18,23 @@ def get_owned_courses(db: Session, current_user: UserModel.User):
             .all()
         )
         if not db_course:
-            raise ValueError("You do not have any courses")
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="You do not have any courses",
+            )
+
+    except SQLAlchemyError as e:
+        # ดักจับ error จาก DB
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error: " + str(e),
+        )
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error",
+            detail="Internal server error: " + str(e),
         )
 
     return ResponseSchema(
