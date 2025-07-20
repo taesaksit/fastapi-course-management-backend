@@ -10,9 +10,7 @@ from schemas.response import ResponseSchema
 
 
 def create_course(
-    db: Session, 
-    course: schemasCourse.CourseCreate, 
-    current_user: UserModel.User
+    db: Session, course: schemasCourse.CourseCreate, current_user: UserModel.User
 ):
     try:
 
@@ -32,3 +30,9 @@ def create_course(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail="Error: " + str(e))
+
+
+def view_course(db: Session):
+    all_course = db.query(CourseModel).all()
+
+    return ResponseSchema(status="success", message="List All courses", data=all_course)

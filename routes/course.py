@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
 from core.oauth2 import allow_roles
+from typing import List
 
 
 from crud import course as crud
@@ -19,3 +20,7 @@ def create_course(
     current_user: UserModel = Depends(allow_roles("professor", "admin")),
 ):
     return crud.create_course(db, course,current_user)
+
+@router.get("/", response_model=ResponseSchema[List[schemasCourse.CourseResponse]])
+def view_courses(db: Session = Depends(get_db)):
+    return crud.view_course(db)
