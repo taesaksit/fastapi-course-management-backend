@@ -21,6 +21,3 @@ def login(user: schemasUser.LoginCreate, db: Session = Depends(get_db)):
     return crud.login(db, user)
 
 
-@router.get("/me", response_model=ResponseSchema[schemasUser.UserResponse])
-def get_me(current_user: User = Depends(allow_roles("admin", "professor", "student"))):
-    return ResponseSchema(status="success", message="My profile", data=current_user)
