@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from crud import user as crud
+from services import user as crud
 from core.oauth2 import allow_roles
 from typing import List
 
@@ -13,17 +13,17 @@ from schemas.response import ResponseSchema
 router = APIRouter(prefix="/user")
 
 
-@router.get("/me", response_model=ResponseSchema[schemasUser.UserResponse])
+@router.get("/me", response_model=ResponseSchema[schemasUser.UserResponse], tags=["user"])
 def get_current_user_profile(
     current_user: UserModel = Depends(allow_roles("admin", "professor", "student"))
 ):
     return ResponseSchema(status="success", message="My profile", data=current_user)
 
 
-# READ my course from professor
 @router.get(
     "/me/courses/owned",
     response_model=ResponseSchema[List[schemasCourse.CourseResponse]],
+    tags=["user"]
 )
 def get_owned_courses(
     db: Session = Depends(get_db),

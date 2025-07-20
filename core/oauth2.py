@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from database import get_db
 from models.user import User
-from crud.auth import get_user_by_email
+from services.auth import get_user_by_email
 from core.security import SECRET_KEY, ALGORITHM
 
 # สร้าง instance ที่ใช้สำหรับ extract JWT Token จาก header

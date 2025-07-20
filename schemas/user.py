@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pydantic import BaseModel, Field, EmailStr
 from enum import Enum
 
