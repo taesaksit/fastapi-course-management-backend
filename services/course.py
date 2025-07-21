@@ -2,10 +2,10 @@ from fastapi import HTTPException, status
 from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from core.exception_handlers import handle_general_exception, handle_sqlalchemy_error
 
 from models.course import Course as CourseModel
-from models import user as UserModel
+from models.user import User as UserModel
+from models.lesson import Lesson as LessonModel
 
 from schemas import course as schemasCourse
 from schemas.response import ResponseSchema
@@ -14,7 +14,7 @@ from schemas.response import ResponseSchema
 def create_course(
     db: Session,
     course: schemasCourse.CourseCreate,
-    current_user: UserModel.User,
+    current_user: UserModel,
 ) -> ResponseSchema:
 
     course_data = course.model_dump()
@@ -71,9 +71,9 @@ def get_courses(db: Session, keyword: Optional[str]) -> ResponseSchema:
     )
 
 
-def get_course_by_id(db: Session, id: int) -> ResponseSchema:
+def get_course_by_id(db: Session, courese_id: int) -> ResponseSchema:
     try:
-        db_course = db.query(CourseModel).filter(CourseModel.id == id).first()
+        db_course = db.query(CourseModel).filter(CourseModel.id == courese_id).first()
 
     except SQLAlchemyError as e:
         raise HTTPException(
@@ -94,14 +94,51 @@ def get_course_by_id(db: Session, id: int) -> ResponseSchema:
     )
 
 
+def get_lessons(db: Session, course_id: int) -> ResponseSchema:
+
+    db_course = db.query(CourseModel).filter(CourseModel.id == course_id).first()
+
+    if db_course is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Course not found",
+        )
+
+    try:
+        db_lessons = (
+            db.query(LessonModel).filter(LessonModel.course_id == course_id).all()
+        )
+
+        if not db_lessons:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No lessons found in this course",
+            )
+
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {e}",
+        )
+
+    return ResponseSchema(
+        status="success",
+        message="Lessons found",
+        data={
+            "course_title": db_course.title,
+            "lessons": db_lessons,
+        },
+    )
+
+
 def update_course(
     db: Session,
-    id_course: int,
+    course_id: int,
     course: schemasCourse.CourseCreate,
-    current_user: UserModel.User,
+    current_user: UserModel,
 ) -> ResponseSchema:
 
-    db_course = db.query(CourseModel).filter(CourseModel.id == id_course).first()
+    db_course = db.query(CourseModel).filter(CourseModel.id == course_id).first()
 
     if db_course is None:
         raise HTTPException(
@@ -138,9 +175,9 @@ def update_course(
     )
 
 
-def delete_coruse(db: Session, id_course: int, current_user: UserModel.User):
+def delete_coruse(db: Session, course_id: int, current_user: UserModel):
 
-    db_course = db.query(CourseModel).filter(CourseModel.id == id_course).first()
+    db_course = db.query(CourseModel).filter(CourseModel.id == course_id).first()
 
     if db_course is None:
         raise HTTPException(

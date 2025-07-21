@@ -8,6 +8,7 @@ from typing import List, Optional
 from services import course as crud
 from models import user as UserModel
 from schemas import course as schemasCourse
+from schemas import lesson as schemasLesson
 from schemas.response import ResponseSchema
 
 router = APIRouter(prefix="/course")
@@ -37,34 +38,45 @@ def get_courses(keyword: Optional[str] = Query(None), db: Session = Depends(get_
 
 # READ BY ID
 @router.get(
-    "/{id}",
+    "/{course_id}",
     response_model=ResponseSchema[schemasCourse.CourseResponse],
     tags=["course"],
 )
-def get_course_by_id(id: int, db: Session = Depends(get_db)):
-    return crud.get_course_by_id(db, id)
+def get_course_by_id(course_id: int, db: Session = Depends(get_db)):
+    return crud.get_course_by_id(db, course_id)
+
+
+# READ Lesson
+@router.get(
+    "/{course_id}/lesson",
+    response_model=ResponseSchema[schemasLesson.LessonResponseWithCourseName],
+    tags=["course"],
+)
+
+def get_lessons(course_id: int, db: Session = Depends(get_db)):
+    return crud.get_lessons(db, course_id)
 
 
 # Update
 @router.put(
-    "/{id_course}",
+    "/{course_id}",
     response_model=ResponseSchema[schemasCourse.CourseResponse],
     tags=["course"],
 )
 def update_course(
-    id_course: int,
+    course_id: int,
     course: schemasCourse.CourseCreate,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(allow_roles("professor", "admin")),
 ):
-    return crud.update_course(db, id_course, course, current_user)
+    return crud.update_course(db, course_id, course, current_user)
 
 
 # Delete
-@router.delete("/{id_course}", tags=["course"])
+@router.delete("/{course_id}", tags=["course"])
 def delete_course(
-    id_course: int,
+    course_id: int,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(allow_roles("professor", "admin")),
 ):
-    return crud.delete_coruse(db, id_course, current_user)
+    return crud.delete_coruse(db, course_id, current_user)

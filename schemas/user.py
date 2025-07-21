@@ -13,6 +13,8 @@ class UserBase(BaseModel):
     email: EmailStr
     name: str
 
+class UserNameOnly(BaseModel):
+    name: str
 
 class RegisterCreate(UserBase):
     password: str
