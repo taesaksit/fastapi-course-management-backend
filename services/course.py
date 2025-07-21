@@ -1,7 +1,8 @@
 from fastapi import HTTPException, status
+from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from typing import Optional
+from core.exception_handlers import handle_general_exception, handle_sqlalchemy_error
 
 from models.course import Course as CourseModel
 from models import user as UserModel
@@ -13,13 +14,14 @@ from schemas.response import ResponseSchema
 def create_course(
     db: Session,
     course: schemasCourse.CourseCreate,
-    current_user: UserModel,
+    current_user: UserModel.User,
 ) -> ResponseSchema:
-    try:
-        course_data = course.model_dump()
-        course_data["professor_id"] = current_user.id
-        new_course = CourseModel(**course_data)
 
+    course_data = course.model_dump()
+    course_data["professor_id"] = current_user.id
+    new_course = CourseModel(**course_data)
+
+    try:
         db.add(new_course)
         db.commit()
         db.refresh(new_course)
@@ -37,60 +39,41 @@ def create_course(
             detail=f"Database error: {e}",
         )
 
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Internal server error: {e}",
-        )
-
 
 def get_courses(db: Session, keyword: Optional[str]) -> ResponseSchema:
+    query = db.query(CourseModel)
+
+    if keyword:
+        query = query.filter(CourseModel.title.ilike(f"%{keyword}%"))
+
+    query = query.order_by(CourseModel.id)
+
     try:
-        # สร้าง Query Object จากตาราง CourseModel ยังไม่ดึงข้อมูลจากฐานข้อมูล
-        query = db.query(CourseModel)
-
-        if keyword:
-            query = query.filter(CourseModel.title.ilike(f"%{keyword}%"))
-
-        results = query.all()  # ยิง SQL query ไปที่ฐานข้อมูล
-
-        if not results:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Course Not found",
-            )
+        results = query.all()
 
     except SQLAlchemyError as e:
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database error: " + str(e),
+            detail=f"Database error: {e}",
         )
 
-    except Exception as e:
+    if not results:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error: " + str(e),
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course Not found",
         )
 
-    return ResponseSchema(status="success", message="List of all courses", data=results)
+    return ResponseSchema(
+        status="success",
+        message="List of all courses",
+        data=results,
+    )
 
 
 def get_course_by_id(db: Session, id: int) -> ResponseSchema:
     try:
         db_course = db.query(CourseModel).filter(CourseModel.id == id).first()
-
-        if db_course is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Course not found",
-            )
-            
-        return ResponseSchema(
-            status="success",
-            message="Course by id result",
-            data=db_course,
-        )
 
     except SQLAlchemyError as e:
         raise HTTPException(
@@ -98,8 +81,92 @@ def get_course_by_id(db: Session, id: int) -> ResponseSchema:
             detail=f"Database error: {e}",
         )
 
-    except Exception as e:
+    if db_course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    return ResponseSchema(
+        status="success",
+        message="Course by id result",
+        data=db_course,
+    )
+
+
+def update_course(
+    db: Session,
+    id_course: int,
+    course: schemasCourse.CourseCreate,
+    current_user: UserModel.User,
+) -> ResponseSchema:
+
+    db_course = db.query(CourseModel).filter(CourseModel.id == id_course).first()
+
+    if db_course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    if db_course.professor_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to update this course",
+        )
+
+    update_data = course.model_dump()
+
+    try:
+        for key, value in update_data.items():
+            setattr(db_course, key, value)
+
+        db.commit()
+        db.refresh(db_course)
+
+    except SQLAlchemyError as e:
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {e}",
+            detail=f"Database error: {e}",
         )
+
+    return ResponseSchema(
+        status="success",
+        message="Course update successfully",
+        data=db_course,
+    )
+
+
+def delete_coruse(db: Session, id_course: int, current_user: UserModel.User):
+
+    db_course = db.query(CourseModel).filter(CourseModel.id == id_course).first()
+
+    if db_course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    if db_course.professor_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to delete this course",
+        )
+
+    course_name = db_course.title
+
+    try:
+        db.delete(db_course)
+        db.commit()
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {e}",
+        )
+    return ResponseSchema(
+        status="success",
+        message=f"Delete course {course_name} ",
+    )

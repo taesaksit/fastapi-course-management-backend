@@ -7,20 +7,22 @@ from schemas.user import UserResponse
 from schemas.lesson import LessonResponse
 from schemas.enrollment import EnrollmentResponse
 
+
 class CourseBase(BaseModel):
     title: str
     description: Optional[str] = None
 
+
 class CourseCreate(CourseBase):
     pass
+
 
 class CourseResponse(CourseBase):
     id: int
     created_at: datetime
     professor: Optional[UserResponse] = None
     lessons: Optional[List[LessonResponse]] = []
-    enrollments: Optional[List[EnrollmentResponse]] = []  
+    enrollments: Optional[List[EnrollmentResponse]] = []
 
     class Config:
         from_attributes = True
-
