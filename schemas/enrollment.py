@@ -2,11 +2,8 @@ from __future__ import annotations
 from pydantic import BaseModel
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime
-
-from schemas.user import UserResponse
-
-if TYPE_CHECKING:
-    from schemas.course import CourseResponse
+from schemas.course import CourseResponse
+from schemas.user import UserNameOnly
 
 
 class EnrollmentBase(BaseModel):
@@ -20,8 +17,21 @@ class EnrollmentCreate(BaseModel):
 
 class EnrollmentResponse(EnrollmentBase):
     id: int
-    course: Optional["CourseResponse"] = None
-    student: Optional[UserResponse] = None
+    course: Optional[CourseResponse] = None
 
     class Config:
         from_attributes = True
+
+
+class StudentEnrollmentInfo(BaseModel):
+    id: int
+    enrolled_at: datetime
+    student: UserNameOnly
+
+    class Config:
+        from_attributes = True
+
+
+class EnrolledCourseWithStudents(BaseModel):
+    course: CourseResponse
+    students: list[StudentEnrollmentInfo]

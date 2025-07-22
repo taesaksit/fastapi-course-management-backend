@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from core.oauth2 import get_current_user, allow_roles
+from core.oauth2 import  allow_roles
 from schemas import lesson as schemaLesson
 from services import lesson as crud
 from schemas.response import ResponseSchema

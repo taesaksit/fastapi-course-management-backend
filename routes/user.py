@@ -30,3 +30,15 @@ def get_owned_courses(
     current_user: UserModel = Depends(allow_roles("professor")),
 ):
     return crud.get_owned_courses(db, current_user)
+
+
+@router.get(
+    "/me/courses/enrolled",
+    response_model=ResponseSchema[List[schemasCourse.CourseResponse]],
+    tags=["user"],
+)
+def get_my_enrollments(
+    db: Session = Depends(get_db),
+    current_user: UserModel.User = Depends(allow_roles("student")),
+):
+    return crud.get_enrolled_courses(db, current_user)
