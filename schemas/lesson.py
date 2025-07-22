@@ -12,6 +12,11 @@ class LessonBase(BaseModel):
 class LessonCreate(LessonBase):
     pass
 
+class LessonUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    order: Optional[int] = None  
+
 
 class LessonResponse(LessonBase):
     id: int

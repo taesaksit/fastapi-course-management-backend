@@ -63,3 +63,50 @@ def create_lesson(
         message="Lesson created successfully",
         data=new_lesson,
     )
+
+
+# update lesson
+def update_lesson(
+    db: Session,
+    lesson_id: int,
+    lesson_update: schemaLesson.LessonUpdate,
+    current_user: UserModel.User,
+):
+    db_lesson = db.query(LessonModel).filter(LessonModel.id == lesson_id).first()
+
+    if db_lesson is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found",
+        )
+
+    # ตรวจสอบสิทธิ์ว่าเจ้าของคอร์สเป็นคนเดียวกับคนที่ login
+    db_course = (
+        db.query(CourseModel).filter(CourseModel.id == db_lesson.course_id).first()
+    )
+
+    if db_course.professor_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to update this lesson",
+        )
+
+    # exclude_unset = True  ฟิลด์ที่ไม่มีค่า (เช่น None) จะ overwrite ค่าเดิมใน database
+    for key, value in lesson_update.model_dump(exclude_unset=True).items():
+        setattr(db_lesson, key, value)
+
+    try:
+        db.commit()
+        db.refresh(db_lesson)
+
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {e}",
+        )
+
+    return ResponseSchema(
+        status="success",
+        message="Lesson updated successfully",
+        data=db_lesson,
+    )

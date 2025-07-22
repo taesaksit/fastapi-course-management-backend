@@ -15,7 +15,11 @@ class Course(Base):
         nullable=False,
     )
     created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
-
     professor = relationship("User", back_populates="course")
-    lessons = relationship("Lesson", back_populates="course")
+    lessons = relationship(
+        "Lesson",
+        back_populates="course",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     enrollment = relationship("Enrollment", back_populates="course")
