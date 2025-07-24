@@ -14,15 +14,3 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-def handle_sqlalchemy_error(e: SQLAlchemyError):
-    raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f"Database error: {e}",
-    )
-
-
-def handle_general_exception(e: Exception):
-    raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f"Internal server error: {e}",
-    )

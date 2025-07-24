@@ -1,6 +1,6 @@
 from models import user, course, lesson
 from fastapi import FastAPI, HTTPException
-from database import Base, engine
+from config.database import Base, engine
 from core.exception_handlers import http_exception_handler
 from routes import auth, course, user, lesson, enrollment
 

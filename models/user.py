@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Enum as SQLEnum, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
-from database import Base
+from config.database import Base
 import enum
 
 

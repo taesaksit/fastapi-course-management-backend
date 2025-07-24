@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from database import get_db
+from config.database import get_db
 from core.oauth2 import allow_roles
 from typing import List, Optional
 
